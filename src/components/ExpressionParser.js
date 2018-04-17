@@ -47,11 +47,17 @@ function processExpression (s, stats) {
   const d = s.match(/^((?:\d)+)d((?:\d)+)$/)
   if (d) return getDiceRoll(parseInt(d[1], 10), parseInt(d[2], 10))
   if (/(bab|str|dex|con|int|wis|cha)/i.test(s)) return getStat(stats, s)
-  if (/^\d+(\.|,)?(\d+)?$/.test(s)) return getNumber(s)
+  if (/^-?\d+(\.|,)?(\d+)?$/.test(s)) return getNumber(s)
   return {value: 0, type: 'empty'}
 }
 
 function processGroupExpression (s) {
+  if (/^DC.+\d+/.test(s.trim())) {
+    return {
+      value: parseInt(s.match(/\d+/)[0], 10),
+      exps: 'DC'
+    }
+  }
   const stats = buildStats(this.$store.state.character, this.$store.getters.statistics)
   const exps = s.split('+').map(s => processExpression(s, stats))
   return {
@@ -61,6 +67,9 @@ function processGroupExpression (s) {
 }
 
 function formatGroupExpression (exp) {
+  if (exp.exps === 'DC') {
+    return `DC: ${exp.value}`
+  }
   const flat = exp.exps.filter(e => e.type !== 'rolls')
     .reduce((sum, c) => sum + c.value, 0)
   const rolls = exp.exps.filter(e => e.type === 'rolls')
@@ -68,9 +77,21 @@ function formatGroupExpression (exp) {
   return `${rolls}${(flat > 0 ? ` + ${flat}` : (flat < 0 ? ` - ${Math.abs(flat)}` : ''))} = ${exp.value}`
 }
 
+function formatGroupExpressionWithoutRolls (exp) {
+  if (exp.exps === 'DC') {
+    return `DC: ${exp.value}`
+  }
+  const flat = exp.exps.filter(e => e.type !== 'rolls')
+    .reduce((sum, c) => sum + c.value, 0)
+  const rolls = exp.exps.filter(e => e.type === 'rolls')
+    .map(e => `${e.amount}d${e.dice}`).join(' + ')
+  return `${rolls}${(flat > 0 ? ` + ${flat}` : (flat < 0 ? ` - ${Math.abs(flat)}` : ''))}`
+}
+
 export default {
   methods: {
     processGroupExpression,
-    formatGroupExpression
+    formatGroupExpression,
+    formatGroupExpressionWithoutRolls
   }
 }

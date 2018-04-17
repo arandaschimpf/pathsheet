@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import { uid } from 'quasar'
 Vue.use(Vuex)
 
 const initStat = () => ({
@@ -103,6 +104,20 @@ const store = {
   mutations: {
     setBaseStatistic ({character}, {key, value}) {
       character.statistics[key].base = value
+    },
+    updateAttack ({character: {offense: {attacks}}}, attack) {
+      const byName = attacks.find(a => a.name === attack.name)
+      if (attack.id) {
+        // edit
+        const instance = attacks.find(a => a.id === attack.id)
+        if (!byName || byName.id === instance.id) {
+          instance.name = attack.name
+          instance.hitFormula = attack.hitFormula
+          instance.damageFormula = attack.damageFormula
+        }
+      } else {
+        if (!byName) attacks.push({...attack, id: uid()})
+      }
     }
   }
 }
